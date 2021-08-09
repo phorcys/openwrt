@@ -5,6 +5,9 @@ choice
 	default BINUTILS_USE_VERSION_2_37
 	help
 	  Select the version of binutils you wish to use.
+	config BINUTILS_USE_VERSION_2_31_1
+		bool "Binutils 2.31.1"
+		select BINUTILS_VERSION_2_31_1
 
 	config BINUTILS_USE_VERSION_2_37
 		bool "Binutils 2.37"

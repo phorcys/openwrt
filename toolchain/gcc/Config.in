@@ -7,7 +7,10 @@ choice
 	  Select the version of gcc you wish to use.
 
 	config GCC_USE_VERSION_8
-		bool "gcc 8.x"
+		bool "gcc 8.4"
+
+	config GCC_USE_VERSION_8_3
+		bool "gcc 8.3"
 
 	config GCC_USE_VERSION_10
 		bool "gcc 10.x"

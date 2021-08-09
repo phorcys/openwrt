@@ -206,6 +206,10 @@ config x86_64
 	select ARCH_64BIT
 	bool
 
+config loongarch64
+	select ARCH_64BIT
+	bool
+
 config ARCH
 	string
 	default "aarch64"   if aarch64
@@ -229,4 +233,5 @@ config ARCH
 	default "sh4eb"     if sh4eb
 	default "sparc"     if sparc
 	default "x86_64"    if x86_64
+	default "loongarch64" if loongarch64
 

@@ -81,10 +81,15 @@ ifeq ($(HOST_OS),Darwin)
   HOST_CONFIG_SITE:=$(INCLUDE_DIR)/site/darwin
 endif
 
+replace_script=$(FIND) $(1) -name $(2) | $(XARGS) chmod u+w; \
+		$(FIND) $(1) -name $(2) | $(XARGS) -n1 cp --remove-destination \
+		$(SCRIPT_DIR)/$(2);
+
 define Host/Configure/Default
 	$(if $(HOST_CONFIGURE_PARALLEL),+)(cd $(HOST_BUILD_DIR)/$(3); \
 		if [ -x configure ]; then \
-			$(CP) $(SCRIPT_DIR)/config.{guess,sub} $(HOST_BUILD_DIR)/$(3)/ && \
+			$(call replace_script,$(HOST_BUILD_DIR)/$(3),config.guess) \
+			$(call replace_script,$(HOST_BUILD_DIR)/$(3),config.sub) \
 			$(HOST_CONFIGURE_VARS) \
 			$(2) \
 			$(HOST_CONFIGURE_CMD) \

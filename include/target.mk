@@ -259,6 +259,10 @@ ifeq ($(DUMP),1)
     CPU_CFLAGS_arc700 = -mcpu=arc700
     CPU_CFLAGS_archs = -mcpu=archs
   endif
+  ifeq ($(ARCH),loongarch64)
+    CPU_TYPE ?= gs464v
+    CPU_CFLAGS += -mhard-float -mfix-loongson3-llsc 
+  endif
   ifneq ($(CPU_TYPE),)
     ifndef CPU_CFLAGS_$(CPU_TYPE)
       $(warning CPU_TYPE "$(CPU_TYPE)" doesn't correspond to a known type)

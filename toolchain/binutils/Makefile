@@ -14,6 +14,9 @@ PKG_SOURCE_URL:=@GNU/binutils/
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.xz
 
 TAR_OPTIONS += --exclude='*.rej'
+ifeq ($(PKG_VERSION),2.31.1)
+  PKG_HASH:=7fdb6f3eeca844545b1f00e1ca6de30680ed19d6a53686db6db5cdddaa262284
+endif
 
 ifeq ($(PKG_VERSION),2.32)
   PKG_HASH:=0ab6c55dd86a92ed561972ba15b9b70a8b9f75557f896446c82e8b36e473ee04
@@ -32,7 +35,7 @@ ifeq ($(PKG_VERSION),2.36.1)
 endif
 
 ifeq ($(PKG_VERSION),2.37)
-  PKG_HASH:=820d9724f020a3e69cb337893a0b63c2db161dadcb0e06fc11dc29eb1e84a32c
+  PKG_HASH:=89452e4f6e0db531fe824454ecb38f8762bcdc2fbbd6cfb3defd5066222f1721
 endif
 
 ifeq ($(PKG_VERSION),2.38)

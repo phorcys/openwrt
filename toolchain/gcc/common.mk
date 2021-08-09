@@ -44,6 +44,10 @@ ifeq ($(PKG_VERSION),12.1.0)
   PKG_HASH:=62fd634889f31c02b64af2c468f064b47ad1ca78411c45abe6ac4b5f8dd19c7b
 endif
 
+ifeq ($(PKG_VERSION),12.0.0)
+  PKG_HASH:=2711c2097b2798b3bcc57cf59723194d2649c9bc23c4691a7e08e1937d5957b6
+endif
+
 PATCH_DIR=../patches/$(GCC_VERSION)
 
 BUGURL=http://bugs.openwrt.org/
@@ -199,7 +203,17 @@ ifneq ($(GCC_PREPARE),)
 	$(CP) $(SCRIPT_DIR)/config.{guess,sub} $(HOST_SOURCE_DIR)/
 	$(SED) 's,^MULTILIB_OSDIRNAMES,# MULTILIB_OSDIRNAMES,' $(HOST_SOURCE_DIR)/gcc/config/*/t-*
 	$(SED) 'd' $(HOST_SOURCE_DIR)/gcc/DEV-PHASE
+<<<<<<< HEAD
 	$(SED) 's, DATESTAMP,,' $(HOST_SOURCE_DIR)/$(GCC_VERSION_FILE)
+=======
+	if [ -f $(HOST_SOURCE_DIR)/gcc/version.c ]; \
+	then \
+		$(SED) 's, DATESTAMP,,' $(HOST_SOURCE_DIR)/gcc/version.c; \
+	else \
+		$(SED) 's, DATESTAMP,,' $(HOST_SOURCE_DIR)/gcc/genversion.c; \
+	fi 
+	#(cd $(HOST_SOURCE_DIR)/libstdc++-v3; autoconf;);
+>>>>>>> 6114099127 (Initial support for loongarch, please run sh ./fetch_loongson_src.sh to get kernel bintuils gcc  source,and get glibc patch)
 	$(SED) 's,gcc_no_link=yes,gcc_no_link=no,' $(HOST_SOURCE_DIR)/libstdc++-v3/configure
 	mkdir -p $(GCC_BUILD_DIR)
   endef

@@ -1,0 +1,24 @@
+diff -ur a/scripts/Makefile b/scripts/Makefile
+--- a/scripts/Makefile	2021-08-08 00:47:39.272847075 +0800
++++ b/scripts/Makefile	2021-08-08 00:44:11.475185727 +0800
+@@ -3,7 +3,8 @@
+ # scripts contains sources for various helper programs used throughout
+ # the kernel for the build process.
+ 
+-CRYPTO_LIBS = $(shell pkg-config --libs libcrypto 2> /dev/null || echo -lcrypto)
++CRYPTO_LIBS = $(shell pkg-config --libs libcrypto 2> /dev/null || echo -lcrypto -ldl -lpthread)
+ CRYPTO_CFLAGS = $(shell pkg-config --cflags libcrypto 2> /dev/null)
++HOSTLDLIBS_genksym = $(CRYPTO_LIBS) -ldl -lpthread
+ 
+ hostprogs-always-$(CONFIG_BUILD_BIN2C)			+= bin2c
+@@ -20,8 +20,8 @@
+ HOSTCFLAGS_sorttable.o = -I$(srctree)/tools/include
+ HOSTCFLAGS_asn1_compiler.o = -I$(srctree)/include
+ HOSTCFLAGS_sign-file.o = $(CRYPTO_CFLAGS)
+-HOSTLDLIBS_sign-file = $(CRYPTO_LIBS)
++HOSTLDLIBS_sign-file = $(CRYPTO_LIBS) -ldl -lpthread
+ HOSTCFLAGS_extract-cert.o = $(CRYPTO_CFLAGS)
+-HOSTLDLIBS_extract-cert = $(CRYPTO_LIBS)
++HOSTLDLIBS_extract-cert = $(CRYPTO_LIBS) -ldl -lpthread
+ 
+ ifdef CONFIG_UNWINDER_ORC
