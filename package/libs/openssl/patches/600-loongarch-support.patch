@@ -1,0 +1,67 @@
+diff -ur a/Configurations/10-main.conf b/Configurations/10-main.conf
+--- a/Configurations/10-main.conf	2021-08-09 17:14:12.145583476 +0800
++++ b/Configurations/10-main.conf	2021-08-09 17:21:54.002374114 +0800
+@@ -753,7 +753,14 @@
+         perlasm_scheme   => "64",
+         multilib         => "64",
+     },
+-
++    #loongarch support
++    "linux64-loongarch64" => {
++        inherit_from     => [ "linux-generic64" ],
++        cflags           => add("-mabi=lp64"),
++        cxxflags         => add("-mabi=lp64"),
++        perlasm_scheme   => "64",
++        multilib         => "64",
++    },
+     #### IA-32 targets...
+     #### These two targets are a bit aged and are to be used on older Linux
+     #### machines where gcc doesn't understand -m32 and -m64
+diff -ur a/Configurations/25-openwrt.conf b/Configurations/25-openwrt.conf
+--- a/Configurations/25-openwrt.conf	2021-08-09 17:14:12.145583476 +0800
++++ b/Configurations/25-openwrt.conf	2021-08-09 17:19:19.759330735 +0800
+@@ -31,6 +31,9 @@
+     "linux-mips64el-openwrt" => {
+         inherit_from    => [ "linux64-mips64", "openwrt" ],
+     },
++    "linux-loongarch64-openwrt" => {
++        inherit_from    => [ "linux64-loongarch64", "openwrt" ],
++    },
+     "linux-mipsel-openwrt" => {
+         inherit_from    => [ "linux-mips32", "openwrt" ],
+     },
+diff -ur a/config b/config
+--- a/config	2021-08-09 17:14:12.149583952 +0800
++++ b/config	2021-08-09 17:15:13.584581816 +0800
+@@ -553,6 +553,7 @@
+ 	fi
+ 	OUT="linux-mips64"
+ 	;;
++  loongarch*-*-linux?) OUT="linux-loongarch64" ;;
+   mips*-*-linux2) OUT="linux-mips32" ;;
+   ppc60x-*-vxworks*) OUT="vxworks-ppc60x" ;;
+   ppcgen-*-vxworks*) OUT="vxworks-ppcgen" ;;
+diff -ur a/crypto/rand/rand_unix.c b/crypto/rand/rand_unix.c
+--- a/crypto/rand/rand_unix.c	2021-08-09 17:14:12.165585857 +0800
++++ b/crypto/rand/rand_unix.c	2021-08-09 17:24:43.500551761 +0800
+@@ -335,6 +335,8 @@
+ #     define __NR_getrandom    356
+ #    elif defined(__aarch64__)
+ #     define __NR_getrandom    278
++#    elif defined(__loongarch64)
++#     define __NR_getrandom    278
+ #    else /* generic */
+ #     define __NR_getrandom    278
+ #    endif
+diff -ur a/crypto/sha/keccak1600.c b/crypto/sha/keccak1600.c
+--- a/crypto/sha/keccak1600.c	2021-08-09 17:14:12.165585857 +0800
++++ b/crypto/sha/keccak1600.c	2021-08-09 17:23:05.342872205 +0800
+@@ -31,7 +31,7 @@
+ 
+ #if defined(__x86_64__) || defined(__aarch64__) || \
+     defined(__mips64) || defined(__ia64) || \
+-    (defined(__VMS) && !defined(__vax))
++    (defined(__VMS) && !defined(__vax)) || defined(__loongarch64)
+ /*
+  * These are available even in ILP32 flavours, but even then they are
+  * capable of performing 64-bit operations as efficiently as in *P64.
