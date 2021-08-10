@@ -10,7 +10,7 @@ ARCH:=loongarch64
 BOARD:=loongson
 BOARDNAME:=Loongson LoongArch Board
 SUBTARGETS:=3a5000
-FEATURES:=gpio
+FEATURES:=squashfs ext4 vdi targz fpu boot-part rootfs-part
 MAINTAINER:=phorcys <phorcys@126.com>
 
 KERNEL_PATCHVER:=5.14
@@ -18,6 +18,7 @@ LINUX_VERSION=5.14.0
 LINUX_VERSION-5.14 = .0
 LINUX_KERNEL_HASH-5.14.0 =e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
 
+DEFAULT_PACKAGES += partx-utils mkf2fs e2fsprogs
 
 include $(INCLUDE_DIR)/target.mk
 DEFAULT_PACKAGES +=  swconfig

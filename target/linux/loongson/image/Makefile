@@ -1,125 +1,97 @@
+# SPDX-License-Identifier: GPL-2.0-only
 #
-# Copyright (C) 2008-2011 OpenWrt.org
-#
-# This is free software, licensed under the GNU General Public License v2.
-# See /LICENSE for more information.
-#
+# Copyright (C) 2006-2020 OpenWrt.org
+
 include $(TOPDIR)/rules.mk
 include $(INCLUDE_DIR)/image.mk
 
-DEVICE_VARS += DTS IMAGE_SIZE NETGEAR_BOARD_ID NETGEAR_HW_ID
-DEVICE_VARS += BUFFALO_TAG_PLATFORM BUFFALO_TAG_VERSION BUFFALO_TAG_MINOR
-DEVICE_VARS += SEAMA_SIGNATURE SEAMA_MTDBLOCK
-
-loadaddr-y := 0x80000000
-loadaddr-$(CONFIG_TARGET_ramips_rt288x) := 0x88000000
-loadaddr-$(CONFIG_TARGET_ramips_mt7621) := 0x80001000
-
-KERNEL_LOADADDR := $(loadaddr-y)
-
-KERNEL_DTB = kernel-bin | patch-dtb | lzma
-define Device/Default
-  PROFILES = Default $$(DTS)
-  KERNEL_DEPENDS = $$(wildcard ../dts/$$(DTS).dts)
-  KERNEL := $(KERNEL_DTB) | uImage lzma
-  DEVICE_DTS_DIR := ../dts
-  IMAGES := sysupgrade.bin
-  IMAGE_SIZE := $(ralink_default_fw_size_8M)
-  SUPPORTED_DEVICES := $(subst _,$(comma),$(1))
-  sysupgrade_bin := append-kernel | append-rootfs | pad-rootfs
-  IMAGE/sysupgrade.bin := append-kernel | append-rootfs | pad-rootfs | append-metadata | check-size $$$$(IMAGE_SIZE)
-endef
-
-
-define Build/patch-dtb
-	$(call Image/BuildDTB,../dts/$(DTS).dts,$@.dtb)
-	$(STAGING_DIR_HOST)/bin/patch-dtb $@ $@.dtb
-endef
-
-define Build/trx
-	$(STAGING_DIR_HOST)/bin/trx $(1) \
-		-o $@ \
-		-m $(IMAGE_SIZE) \
-		-f $(IMAGE_KERNEL) \
-		-a 4 -f $(IMAGE_ROOTFS)
-endef
-
-define Build/loader-common
-	rm -rf $@.src
-	$(MAKE) -C lzma-loader \
-		PKG_BUILD_DIR="$@.src" \
-		TARGET_DIR="$(dir $@)" LOADER_NAME="$(notdir $@)" \
-		BOARD="$(BOARDNAME)" PLATFORM="$(PLATFORM)" \
-		LZMA_TEXT_START=0x82000000 LOADADDR=$(KERNEL_LOADADDR) \
-		$(1) compile loader.$(LOADER_TYPE)
-	mv "$@.$(LOADER_TYPE)" "$@"
-	rm -rf $@.src
-endef
-
-define Build/loader-kernel
-	$(call Build/loader-common,LOADER_DATA="$@")
-endef
-
-define Build/relocate-kernel
-	rm -rf $@.relocate
-	$(CP) ../../generic/image/relocate $@.relocate
-	$(MAKE) -C $@.relocate KERNEL_ADDR=$(KERNEL_LOADADDR) CROSS_COMPILE=$(TARGET_CROSS)
-	( \
-		dd if=$@.relocate/loader.bin bs=32 conv=sync && \
-		perl -e '@s = stat("$@"); print pack("V", @s[7])' && \
-		cat $@ \
-	) > $@.new
-	mv $@.new $@
-	rm -rf $@.relocate
-endef
-
-define Build/umedia-header
-	fix-u-media-header -T 0x46 -B $(1) -i $@ -o $@.new && mv $@.new $@
-endef
-
-define Build/edimax-header
-	$(STAGING_DIR_HOST)/bin/mkedimaximg -i $@ -o $@.new $(1)
-	@mv $@.new $@
-endef
-
-define Build/poray-header
-	$(STAGING_DIR_HOST)/bin/mkporayfw $(1) -f $@ -o $@.new
-	mv $@.new $@
-endef
-
-define Build/wrg-header
-	mkwrgimg -i $@ -d "/dev/mtdblock/2" -s $(1) -o $@.new
-	mv $@.new $@
-endef
-
-# combine kernel and rootfs into one image
-# mkdlinkfw <type> <optional extra arguments to mkdlinkfw binary>
-
-define Build/mkdlinkfw
-	-$(STAGING_DIR_HOST)/bin/mkdlinkfw \
-		-k $(IMAGE_KERNEL) \
-		-r $(IMAGE_ROOTFS) \
-		-o $@ \
-		-s $(DLINK_FIRMWARE_SIZE)
-endef
-
-define Build/mkdlinkfw-factory
-	-$(STAGING_DIR_HOST)/bin/mkdlinkfw \
-		-m $(DLINK_ROM_ID) -f $(DLINK_FAMILY_MEMBER) \
-		-F $@ \
-		-o $@.new \
-		-s $(DLINK_FIRMWARE_SIZE)
-	mv $@.new $@
-endef
-
-define Build/zyimage
-	$(STAGING_DIR_HOST)/bin/zyimage $(1) $@
-endef
-
-
-ifeq ($(SUBTARGET),3a5000)
-include 3a5000.mk
+GRUB2_VARIANT = efi
+GRUB_TERMINALS =
+GRUB_SERIAL_CONFIG =
+GRUB_TERMINAL_CONFIG =
+GRUB_CONSOLE_CMDLINE =
+CONFIG_TARGET_KERNEL_PARTSIZE = 128
+ifneq ($(CONFIG_GRUB_CONSOLE),)
+  GRUB_CONSOLE_CMDLINE += console=tty0
+  GRUB_TERMINALS += console
 endif
 
+GRUB_SERIAL:=$(call qstrip,$(CONFIG_GRUB_SERIAL))
+
+ifneq ($(GRUB_SERIAL),)
+  GRUB_CONSOLE_CMDLINE += console=$(GRUB_SERIAL),$(CONFIG_GRUB_BAUDRATE)n8$(if $(CONFIG_GRUB_FLOWCONTROL),r,)
+  GRUB_SERIAL_CONFIG := serial --unit=0 --speed=$(CONFIG_GRUB_BAUDRATE) --word=8 --parity=no --stop=1 --rtscts=$(if $(CONFIG_GRUB_FLOWCONTROL),on,off)
+  GRUB_TERMINALS += serial
+endif
+
+ifneq ($(GRUB_TERMINALS),)
+  GRUB_TERMINAL_CONFIG := terminal_input $(GRUB_TERMINALS); terminal_output $(GRUB_TERMINALS)
+endif
+
+ROOTPART:=$(call qstrip,$(CONFIG_TARGET_ROOTFS_PARTNAME))
+ROOTPART:=$(if $(ROOTPART),$(ROOTPART),PARTUUID=$(IMG_PART_SIGNATURE)-02)
+GPT_ROOTPART:=$(call qstrip,$(CONFIG_TARGET_ROOTFS_PARTNAME))
+GPT_ROOTPART:=$(if $(GPT_ROOTPART),$(GPT_ROOTPART),PARTUUID=$(shell echo $(IMG_PART_DISKGUID) | sed 's/00$$/02/'))
+
+GRUB_TIMEOUT:=$(call qstrip,$(CONFIG_GRUB_TIMEOUT))
+GRUB_TITLE:=$(call qstrip,$(CONFIG_GRUB_TITLE))
+
+BOOTOPTS:=$(call qstrip,$(CONFIG_GRUB_BOOTOPTS))
+
+define Build/combined
+	$(CP) $(KDIR)/$(KERNEL_NAME) $@.boot/boot/vmlinuz
+	-$(CP) $(STAGING_DIR_ROOT)/boot/. $@.boot/boot/
+	$(if $(filter $(1),efi),
+		$(INSTALL_DIR) $@.boot/efi/boot
+		$(CP) $(STAGING_DIR_IMAGE)/grub2/bootloongarch64.efi $@.boot/efi/boot/
+	)
+	PADDING="1" SIGNATURE="$(IMG_PART_SIGNATURE)" \
+		$(if $(filter $(1),efi),GUID="$(IMG_PART_DISKGUID)") $(SCRIPT_DIR)/gen_image_generic.sh \
+		$@ \
+		$(CONFIG_TARGET_KERNEL_PARTSIZE) $@.boot \
+		$(CONFIG_TARGET_ROOTFS_PARTSIZE) $(IMAGE_ROOTFS) \
+		512
+endef
+
+define Build/grub-config
+	rm -fR $@.boot
+	$(INSTALL_DIR) $@.boot/boot/grub
+	sed \
+		-e 's#@SERIAL_CONFIG@#$(strip $(GRUB_SERIAL_CONFIG))#g' \
+		-e 's#@TERMINAL_CONFIG@#$(strip $(GRUB_TERMINAL_CONFIG))#g' \
+		-e 's#@ROOTPART@#root=$(ROOTPART) rootwait#g' \
+		-e 's#@GPT_ROOTPART@#root=$(GPT_ROOTPART) rootwait#g' \
+		-e 's#@CMDLINE@#$(BOOTOPTS) $(GRUB_CONSOLE_CMDLINE)#g' \
+		-e 's#@TIMEOUT@#$(GRUB_TIMEOUT)#g' \
+		-e 's#@TITLE@#$(GRUB_TITLE)#g' \
+		./grub-$(1).cfg > $@.boot/boot/grub/grub.cfg
+endef
+
+define Build/grub-install
+	rm -fR $@.grub2
+	$(INSTALL_DIR) $@.grub2
+endef
+
+DEVICE_VARS += GRUB2_VARIANT
+define Device/Default
+  IMAGE/rootfs.img := append-rootfs | pad-to $(ROOTFS_PARTSIZE)
+  IMAGE/rootfs.img.gz := append-rootfs | pad-to $(ROOTFS_PARTSIZE) | gzip
+  IMAGE/combined-efi.img := grub-config efi | combined efi | grub-install efi | append-metadata
+  IMAGE/combined-efi.img.gz := grub-config efi | combined efi | grub-install efi | gzip | append-metadata
+  ifeq ($(CONFIG_TARGET_IMAGES_GZIP),y)
+    IMAGES-y := rootfs.img.gz
+    IMAGES-$$(CONFIG_GRUB_EFI_IMAGES) += combined-efi.img.gz
+  else
+    IMAGES-y := rootfs.img
+    IMAGES-$$(CONFIG_GRUB_EFI_IMAGES) += combined-efi.img
+  endif
+  KERNEL := kernel-bin
+  KERNEL_INSTALL := 1
+  KERNEL_NAME := vmlinux
+  IMAGES := $$(IMAGES-y)
+  SUPPORTED_DEVICES :=
+endef
+include $(SUBTARGET).mk
 
 $(eval $(call BuildImage))
+

@@ -29,17 +29,23 @@ PKG_FLAGS:=nonshared
 include $(INCLUDE_DIR)/host-build.mk
 include $(INCLUDE_DIR)/package.mk
 
-define Package/grub2/Default
+define Package/grub2
   CATEGORY:=Boot Loaders
   SECTION:=boot
-  TITLE:=GRand Unified Bootloader ($(1))
+  TITLE:=GRand Unified Bootloader pc
   URL:=http://www.gnu.org/software/grub/
   DEPENDS:=@TARGET_x86
-  VARIANT:=$(1)
+  VARIANT:=pc
 endef
 
-Package/grub2=$(call Package/grub2/Default,pc)
-Package/grub2-efi=$(call Package/grub2/Default,efi)
+define Package/grub2-efi
+  CATEGORY:=Boot Loaders
+  SECTION:=boot
+  TITLE:=GRand Unified Bootloader efi
+  URL:=http://www.gnu.org/software/grub/
+  DEPENDS:= @(TARGET_loongson||TARGET_x86)
+  VARIANT:=efi
+endef
 
 define Package/grub2-editenv
   CATEGORY:=Utilities
@@ -82,7 +88,8 @@ CONFIGURE_ARGS += \
 	--disable-libzfs \
 	--disable-liblzma \
 	--disable-grub-mkfont \
-	--with-platform=$(BUILD_VARIANT)
+	--with-platform=$(BUILD_VARIANT) \
+	--with-utils=host 
 
 HOST_CONFIGURE_VARS += \
 	grub_build_mkfont_excuse="don't want fonts"
@@ -94,11 +101,13 @@ HOST_CONFIGURE_ARGS += \
 	--disable-werror \
 	--disable-libzfs \
 	--disable-nls \
-	--with-platform=none
+	--with-platform=$(if $(CONFIG_loongson),efi,none) \
+	--with-utils=host 
 
 HOST_MAKE_FLAGS += \
 	TARGET_RANLIB=$(TARGET_RANLIB) \
-	LIBLZMA=$(STAGING_DIR_HOST)/lib/liblzma.a
+	LIBLZMA=$(STAGING_DIR_HOST)/lib/liblzma.a \
+	CFLAGS+="-DGNULIB_OVERRIDES_WINT_T=0"
 
 
 ifneq ($(BUILD_VARIANT),none)
@@ -153,15 +162,15 @@ define Package/grub2-efi/install
 		-p /boot/grub \
 		-O $(CONFIG_ARCH)-efi \
 		-c $(PKG_BUILD_DIR)/grub-early.cfg \
-		-o $(STAGING_DIR_IMAGE)/grub2/boot$(if $(CONFIG_x86_64),x64,ia32).efi \
-		at_keyboard boot chain configfile fat linux ls part_gpt reboot serial efi_gop efi_uga
+		-o $(STAGING_DIR_IMAGE)/grub2/boot$(if $(CONFIG_TARGET_loongson),loongarch64,$(if $(CONFIG_TARGET_x86_64),x64,ia32)).efi \
+		$(if $(CONFIG_TARGET_loongson),,at_keyboard efi_uga) boot chain configfile fat linux ls part_gpt reboot serial efi_gop
 	$(STAGING_DIR_HOST)/bin/grub-mkimage \
 		-d $(PKG_BUILD_DIR)/grub-core \
 		-p /boot/grub \
 		-O $(CONFIG_ARCH)-efi \
 		-c ./files/grub-early.cfg \
-		-o $(STAGING_DIR_IMAGE)/grub2/iso-boot$(if $(CONFIG_x86_64),x64,ia32).efi \
-		at_keyboard boot chain configfile fat iso9660 linux ls part_msdos part_gpt reboot serial test efi_gop efi_uga
+		-o $(STAGING_DIR_IMAGE)/grub2/iso-boot$(if $(CONFIG_TARGET_loongson),loongarch64,$(if $(CONFIG_TARGET_x86_64),x64,ia32)).efi \
+		$(if $(CONFIG_TARGET_loongson),,at_keyboard efi_uga) boot chain configfile fat iso9660 linux ls part_msdos part_gpt reboot serial test efi_gop
 endef
 
 define Package/grub2-editenv/install
