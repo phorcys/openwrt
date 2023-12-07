@@ -156,6 +156,10 @@ config i386
 config i686
 	bool 
 
+config loongarch64
+	select ARCH_64BIT
+	bool
+
 config m68k
 	bool
 
@@ -234,4 +238,4 @@ config ARCH
 	default "sh4eb"     if sh4eb
 	default "sparc"     if sparc
 	default "x86_64"    if x86_64
-
+	default "loongarch64" if loongarch64
