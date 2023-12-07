@@ -191,6 +191,8 @@ $(call Build/Configure/Default,, \
 	# doesn't exits
 	-$(CP) $(LINUX_DIR)/include/linux/compiler_types.h \
 		$(PKG_BUILD_DIR)/pppd/plugins/pppoatm/linux/
+
+	if [ "$(ARCH)" = "loongarch64" ];then  $(RM) -rf $(PKG_BUILD_DIR)/pppd/plugins/pppoatm/linux/;fi
 endef
 
 MAKE_FLAGS += COPTS="$(TARGET_CFLAGS)" \
