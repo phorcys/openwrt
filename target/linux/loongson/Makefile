@@ -14,11 +14,9 @@ FEATURES:=squashfs ext4 targz fpu boot-part rootfs-part
 MAINTAINER:=phorcys <phorcys@126.com>
 
 KERNEL_PATCHVER:=6.6
-LINUX_VERSION=6.6.0
-LINUX_VERSION-6.6 = .0
-LINUX_KERNEL_HASH-6.6.0 =e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
+KERNELNAME:=vmlinux vmlinuz
 
-DEFAULT_PACKAGES += partx-utils mkf2fs e2fsprogs
+DEFAULT_PACKAGES += partx-utils mkf2fs e2fsprogs grub-efi-loongarch64
 
 include $(INCLUDE_DIR)/target.mk
 DEFAULT_PACKAGES +=  swconfig
