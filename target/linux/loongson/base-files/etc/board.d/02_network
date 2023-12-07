@@ -1,0 +1,17 @@
+#
+# Copyright © 2017 OpenWrt.org
+#
+
+. /lib/functions/system.sh
+. /lib/functions/uci-defaults.sh
+
+board_config_update
+
+case "$(board_name)" in
+LM-A2101)
+	ucidef_set_interfaces_lan_wan "eth1" "eth0"
+	;;
+esac
+board_config_flush
+
+exit 0

@@ -203,11 +203,12 @@ menu "Target Images"
 		default y
 
 	config GRUB_EFI_IMAGES
-		bool "Build GRUB EFI images (Linux x86 or x86_64 host only)"
-		depends on TARGET_x86 || TARGET_armsr
+		bool "Build GRUB EFI images (Linux x86 or x86_64 or loongarch64 host only)"
+		depends on TARGET_x86 || TARGET_armsr || TARGET_loongson
 		depends on TARGET_ROOTFS_EXT4FS || TARGET_ROOTFS_JFFS2 || TARGET_ROOTFS_SQUASHFS
 		select PACKAGE_grub2 if TARGET_x86
 		select PACKAGE_grub2-efi if TARGET_x86
+	        select PACKAGE_grub2-efi-loongarch64 if TARGET_loongson
 		select PACKAGE_grub2-bios-setup if TARGET_x86
 		select PACKAGE_grub2-efi-arm if TARGET_armsr
 		select PACKAGE_kmod-fs-vfat
@@ -252,8 +253,15 @@ menu "Target Images"
 
 	config ISO_IMAGES
 		bool "Build LiveCD image (ISO)"
-		depends on TARGET_x86
+		depends on TARGET_x86 || TARGET_loongson
 		depends on GRUB_IMAGES || GRUB_EFI_IMAGES
+
+
+        config QEMU_IMAGES
+                bool "Build QEMU image files (qcow2)"
+                depends on TARGET_loongson
+                depends on GRUB_EFI_IMAGES
+                select PACKAGE_kmod-e1000
 
 	config VDI_IMAGES
 		bool "Build VirtualBox image files (VDI)"
@@ -275,12 +283,12 @@ menu "Target Images"
 
 	config TARGET_SERIAL
 		string "Serial port device"
-		depends on TARGET_x86 || TARGET_armsr
+		depends on TARGET_x86 || TARGET_armsr || TARGET_loongson
 		default "ttyS0"
 
 	config TARGET_IMAGES_GZIP
 		bool "GZip images"
-		depends on TARGET_ROOTFS_EXT4FS || TARGET_x86 || TARGET_armsr || TARGET_malta
+		depends on TARGET_ROOTFS_EXT4FS || TARGET_x86 || TARGET_armsr || TARGET_malta || TARGET_loongson
 		default y
 
 	comment "Image Options"

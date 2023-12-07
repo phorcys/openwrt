@@ -41,6 +41,7 @@ endef
 
 Package/grub2=$(call Package/grub2/Default,x86,pc)
 Package/grub2-efi=$(call Package/grub2/Default,x86,efi)
+Package/grub2-efi-loongarch64=$(call Package/grub2/Default,loongson,efi)
 Package/grub2-efi-arm=$(call Package/grub2/Default,armsr,efi)
 
 define Package/grub2-editenv
@@ -113,7 +114,6 @@ ifeq ($(CONFIG_arm),y)
 endif
 
 define Host/Configure
-	$(SED) 's,(RANLIB),(TARGET_RANLIB),' $(HOST_BUILD_DIR)/grub-core/Makefile.in
 	$(Host/Configure/Default)
 endef
 
@@ -191,6 +191,24 @@ define Package/grub2-efi-arm/install
 		reboot serial test efi_gop
 endef
 
+define Package/grub2-efi-loongarch64/install
+	$(INSTALL_DIR) $(STAGING_DIR_IMAGE)/grub2
+	sed 's#msdos1#gpt1#g' ./files/grub-early.cfg >$(PKG_BUILD_DIR)/grub-early.cfg
+	$(STAGING_DIR_HOST)/bin/grub-mkimage \
+		-d $(PKG_BUILD_DIR)/grub-core \
+		-p /boot/grub \
+		-O $(CONFIG_ARCH)-efi \
+		-c $(PKG_BUILD_DIR)/grub-early.cfg \
+		-o $(STAGING_DIR_IMAGE)/grub2/bootloongarch64.efi \
+		boot chain configfile exfat ext2 fat linux ls part_msdos part_gpt reboot serial squash4 test efi_gop
+	$(STAGING_DIR_HOST)/bin/grub-mkimage \
+		-d $(PKG_BUILD_DIR)/grub-core \
+		-p /boot/grub \
+		-O $(CONFIG_ARCH)-efi \
+		-c ./files/grub-early.cfg \
+		-o $(STAGING_DIR_IMAGE)/grub2/bootloongarch64.efi \
+		boot chain configfile exfat ext2 fat iso9660 linux ls part_msdos part_gpt reboot serial squash4 test efi_gop
+endef
 
 define Package/grub2-editenv/install
 	$(INSTALL_DIR) $(1)/usr/sbin
@@ -206,5 +224,6 @@ $(eval $(call HostBuild))
 $(eval $(call BuildPackage,grub2))
 $(eval $(call BuildPackage,grub2-efi))
 $(eval $(call BuildPackage,grub2-efi-arm))
+$(eval $(call BuildPackage,grub2-efi-loongarch64))
 $(eval $(call BuildPackage,grub2-editenv))
 $(eval $(call BuildPackage,grub2-bios-setup))
